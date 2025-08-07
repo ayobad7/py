@@ -1,0 +1,375 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// === Display ===
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+#define OLED_ADDR 0x3C
+
+// === Rotary & Buttons ===
+#define ENCA 5
+#define ENCB 6
+#define BTN1 3      // Rotary press = SELECT/CONFIRM
+#define PWR_BUT 2   // Back button
+#define BTN3 4      // Set as origin
+
+// === Stepper Position Tracking ===
+int stepper1Steps = 0; // Optional: replace with your stepper library if needed
+int stepper2Steps = 0;
+
+// === State Variables ===
+int lastENCA = HIGH;
+int menuIndex = 0;
+String currentMenu = "home";
+int currentStepper = 0; // track Stepper 1 or 2
+int stepperOption = 0;  // [0] Set Origin [1] Set Angle
+
+int selectedRPM = 800;
+int stepper1Angle = 0;
+int stepper2Angle = 0;
+int confirmFlashIndex = -1; // for visual feedback
+unsigned long flashStartTime = 0;
+bool settingOrigin = false;
+bool originStepperRunning = false;
+
+// === Encoder Handling ===
+int encoderPos = 0;
+int lastEncoded = 0;
+
+// === Setup ===
+void setup() {
+  Wire.setSDA(0); Wire.setSCL(1);
+  Wire.begin();
+  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+  display.clearDisplay();
+  pinMode(ENCA, INPUT_PULLUP);
+  pinMode(ENCB, INPUT_PULLUP);
+  pinMode(BTN1, INPUT_PULLUP);
+  pinMode(PWR_BUT, INPUT_PULLUP);
+  pinMode(BTN3, INPUT_PULLUP);
+  drawHome();
+}
+
+void loop() {
+  handleEncoder();
+  handleButtons();
+  // Handle flash timeout
+  if (confirmFlashIndex >= 0 && millis() - flashStartTime > 300) {
+    confirmFlashIndex = -1;
+    updateMenu();
+  }
+  delay(25);
+}
+
+// === Stepper Step Function (replace with your actual motor code) ===
+void stepStepper(int stepper, int dir) {
+  if (stepper == 1) {
+    stepper1Steps += dir;
+    // TODO: Add code to move Stepper1 by 1 step in the direction of 'dir'
+  } else if (stepper == 2) {
+    stepper2Steps += dir;
+    // TODO: Add code to move Stepper2 by 1 step in the direction of 'dir'
+  }
+}
+
+// === Encoder Handling ===
+void handleEncoder() {
+  int MSB = digitalRead(ENCA);
+  int LSB = digitalRead(ENCB);
+  int encoded = (MSB << 1) | LSB;
+  int sum = (lastEncoded << 2) | encoded;
+  bool inSetOriginMode = (currentMenu == "set_origin" && !originStepperRunning);
+
+  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {
+    encoderPos++;
+    if (inSetOriginMode) stepStepper(currentStepper, +1); // Forward step
+  }
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {
+    encoderPos--;
+    if (inSetOriginMode) stepStepper(currentStepper, -1); // Backward step
+  }
+  lastEncoded = encoded;
+
+  // Only normal menu navigation if not in set origin mode
+  if (!inSetOriginMode) {
+    if (encoderPos >= 2) {
+      encoderPos = 0;
+      menuIndex++;
+      updateMenu();
+    } else if (encoderPos <= -2) {
+      encoderPos = 0;
+      menuIndex--;
+      updateMenu();
+    }
+  }
+}
+
+// === Button Handling ===
+void handleButtons() {
+  if (!digitalRead(BTN1)) {
+    delay(150);
+    handleSelect();
+  }
+  if (!digitalRead(PWR_BUT)) {
+    delay(150);
+    handleBack();
+  }
+  if (!digitalRead(BTN3)) {
+    delay(150);
+    handleBtn3();
+  }
+}
+
+// === BTN3 (Set Origin) ===
+void handleBtn3() {
+  // Only active on the set_origin page, only when stepper is paused
+  if (currentMenu == "set_origin" && !originStepperRunning) {
+    if (currentStepper == 1) stepper1Steps = 0;
+    else if (currentStepper == 2) stepper2Steps = 0;
+    settingOrigin = false;
+    currentMenu = "stepper_options";
+    menuIndex = 0;
+    updateMenu();
+  }
+}
+
+// === Menu State Update etc (unchanged from your code) ===
+void updateMenu() {
+  if (currentMenu == "home") {
+    if (menuIndex < 0) menuIndex = 2;
+    if (menuIndex > 2) menuIndex = 0;
+    drawHome();
+  } else if (currentMenu == "motor") {
+    if (menuIndex < 0) menuIndex = 17;
+    if (menuIndex > 17) menuIndex = 0;
+    drawRPMMenu();
+  } else if (currentMenu == "stepper") {
+    if (menuIndex < 0) menuIndex = 1;
+    if (menuIndex > 1) menuIndex = 0;
+    drawStepperMenu();
+  } else if (currentMenu == "stepper_options") {
+    if (menuIndex < 0) menuIndex = 1;
+    if (menuIndex > 1) menuIndex = 0;
+    drawStepperOptionsMenu();
+  } else if (currentMenu == "set_origin") {
+    drawSetOriginPage();
+  } else if (currentMenu == "angle") {
+    if (menuIndex < 0) menuIndex = 5;
+    if (menuIndex > 5) menuIndex = 0;
+    drawAngleMenu();
+  } else if (currentMenu == "custom_angle") {
+    if (menuIndex < 0) menuIndex = 0;
+    if (menuIndex > 72) menuIndex = 72;
+    drawCustomAngleMenu();
+  } else if (currentMenu == "monitor") {
+    drawMonitorPage();
+  }
+}
+
+// === Select/Back logic (unchanged from your code) ===
+void handleSelect() {
+  if (currentMenu == "home") {
+    if (menuIndex == 0) currentMenu = "motor";
+    else if (menuIndex == 1) currentMenu = "stepper";
+    else if (menuIndex == 2) currentMenu = "monitor";
+    menuIndex = 0;
+    updateMenu();
+  } else if (currentMenu == "motor") {
+    selectedRPM = 800 + menuIndex * 100;
+    flashSelected(menuIndex);
+  } else if (currentMenu == "stepper") {
+    currentStepper = (menuIndex == 0) ? 1 : 2;
+    currentMenu = "stepper_options";
+    menuIndex = 0;
+    updateMenu();
+  } else if (currentMenu == "stepper_options") {
+    if (menuIndex == 0) { // Set Origin
+      currentMenu = "set_origin";
+      settingOrigin = true;
+      originStepperRunning = false;
+      updateMenu();
+    } else if (menuIndex == 1) { // Set Angle
+      currentMenu = "angle";
+      menuIndex = 0;
+      updateMenu();
+    }
+  } else if (currentMenu == "set_origin") {
+    originStepperRunning = !originStepperRunning;
+    updateMenu();
+    // Add your stepper spin/stop code here!
+  } else if (currentMenu == "angle") {
+    if (menuIndex < 5) {
+      int angles[] = {10, 30, 45, 90, 180};
+      if (currentStepper == 1) stepper1Angle = angles[menuIndex];
+      if (currentStepper == 2) stepper2Angle = angles[menuIndex];
+      flashSelected(menuIndex);
+    } else {
+      currentMenu = "custom_angle";
+      menuIndex = 0;
+      updateMenu();
+    }
+  } else if (currentMenu == "custom_angle") {
+    int custom = menuIndex * 5;
+    if (currentStepper == 1) stepper1Angle = custom;
+    if (currentStepper == 2) stepper2Angle = custom;
+    flashSelected(-2); // custom
+  }
+}
+void flashSelected(int idx) {
+  confirmFlashIndex = idx;
+  flashStartTime = millis();
+  updateMenu();
+}
+void handleBack() {
+  if (currentMenu == "motor" || currentMenu == "stepper") {
+    currentMenu = "home";
+    menuIndex = 0;
+    drawHome();
+  } else if (currentMenu == "stepper_options") {
+    currentMenu = "stepper";
+    menuIndex = 0;
+    drawStepperMenu();
+  } else if (currentMenu == "set_origin") {
+    currentMenu = "stepper_options";
+    menuIndex = 0;
+    drawStepperOptionsMenu();
+  } else if (currentMenu == "angle") {
+    currentMenu = "stepper_options";
+    menuIndex = 0;
+    drawStepperOptionsMenu();
+  } else if (currentMenu == "custom_angle") {
+    currentMenu = "angle";
+    menuIndex = 0;
+    drawAngleMenu();
+  } else if (currentMenu == "monitor") {
+    currentMenu = "home";
+    menuIndex = 0;
+    drawHome();
+  }
+}
+
+// === Draw Functions ===
+void drawTitle(String title) {
+  display.clearDisplay();
+  display.fillRoundRect(0, 0, SCREEN_WIDTH, 16, 4, SSD1306_WHITE);
+  int16_t x1, y1; uint16_t w, h;
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_BLACK);
+  display.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
+  display.setCursor((SCREEN_WIDTH - w) / 2, 4);
+  display.print(title);
+  display.setTextColor(SSD1306_WHITE);
+}
+void drawArrow(int x, int y) {
+  display.fillTriangle(x, y, x, y + 8, x + 6, y + 4, SSD1306_WHITE);
+}
+void drawHome() {
+  drawTitle("Home");
+  drawArrow(10, 24 + menuIndex * 16);
+  display.setCursor(20, 24); display.println("Motor");
+  display.setCursor(20, 40); display.println("Stepper");
+  display.setCursor(20, 56); display.println("Monitor");
+  display.display();
+}
+void drawRPMMenu() {
+  drawTitle("RPM");
+  const int visibleCount = 3;
+  int topIndex = menuIndex - menuIndex % visibleCount;
+  for (int i = 0; i < visibleCount; i++) {
+    int idx = topIndex + i;
+    if (idx > 17) break;
+    int rpm = 800 + idx * 100;
+    int y = 20 + i * 14;
+    if (idx == menuIndex) drawArrow(6, y);
+    if (idx == confirmFlashIndex) {
+      display.fillRect(18, y - 1, 100, 12, SSD1306_WHITE);
+      display.setTextColor(SSD1306_BLACK);
+    } else {
+      display.setTextColor(SSD1306_WHITE);
+    }
+    display.setCursor(20, y);
+    display.setTextSize(1);
+    display.print(rpm);
+  }
+  display.setTextColor(SSD1306_WHITE);
+  display.display();
+}
+void drawStepperMenu() {
+  drawTitle("OCS");
+  drawArrow(10, 24 + menuIndex * 16);
+  display.setCursor(20, 24); display.println("Stepper 1");
+  display.setCursor(20, 40); display.println("Stepper 2");
+  display.display();
+}
+void drawStepperOptionsMenu() {
+  String title = (currentStepper == 1 ? "Stepper 1" : "Stepper 2");
+  drawTitle(title);
+  drawArrow(10, 24 + menuIndex * 16);
+  display.setCursor(20, 24); display.println("Set origin");
+  display.setCursor(20, 40); display.println("Set angle");
+  display.display();
+}
+void drawSetOriginPage() {
+  String title = (currentStepper == 1 ? "Set Origin 1" : "Set Origin 2");
+  drawTitle(title);
+  display.setCursor(0, 22);
+  if (!originStepperRunning) {
+    display.println("Rotate encoder to move");
+    display.println("Btn1: Spin motor");
+    display.println("Btn3: Set as origin");
+    display.println("Back: Return");
+    // Show current steps/position (optional)
+    display.setCursor(0, 54);
+    display.print("Steps: ");
+    display.print(currentStepper == 1 ? stepper1Steps : stepper2Steps);
+  } else {
+    display.println("Stepper spinning...");
+    display.println("Btn1: Pause");
+    display.println("Back: Cancel");
+  }
+  display.display();
+}
+void drawAngleMenu() {
+  drawTitle("Angle");
+  const char* options[] = {"10 deg", "30 deg", "45 deg", "90 deg", "180 deg", "Custom"};
+  const int visibleCount = 4;
+  int topIndex = menuIndex - menuIndex % visibleCount;
+  for (int i = 0; i < visibleCount; i++) {
+    int idx = topIndex + i;
+    if (idx > 5) break;
+    int y = 20 + i * 12;
+    if (idx == menuIndex) drawArrow(6, y);
+    if (idx == confirmFlashIndex) {
+      display.fillRect(18, y - 1, 100, 12, SSD1306_WHITE);
+      display.setTextColor(SSD1306_BLACK);
+    } else {
+      display.setTextColor(SSD1306_WHITE);
+    }
+    display.setCursor(20, y);
+    display.println(options[idx]);
+  }
+  display.setTextColor(SSD1306_WHITE);
+  display.display();
+}
+void drawCustomAngleMenu() {
+  drawTitle("Custom");
+  int angle = menuIndex * 5;
+  display.setTextSize(2);
+  display.setCursor(40, 32);
+  display.print(angle);
+  display.println("\xB0");
+  display.setTextSize(1);
+  display.display();
+}
+void drawMonitorPage() {
+  drawTitle("Monitor");
+  display.setCursor(10, 20);
+  display.print("Motor: "); display.print(selectedRPM); display.println(" RPM");
+  display.setCursor(10, 34);
+  display.print("Stepper 1: "); display.print(stepper1Angle); display.println(" deg");
+  display.setCursor(10, 48);
+  display.print("Stepper 2: "); display.print(stepper2Angle); display.println(" deg");
+  display.display();
+}
