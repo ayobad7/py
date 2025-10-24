@@ -1,3 +1,107 @@
 https://once-architect.netlify.app/#invite_token=wG4R7uJ9goJr5iMo9LEL5Q
 
 https://once-architect.netlify.app/#invite_token=OTOPC2gQgWyNM0yTiBmwpQ
+
+1) Define the “size system” (don’t let admins pick arbitrary widths)
+Use a small set of size classes and allowed spans that map well to your grid.
+For a 3‑column desktop grid (collapsing to 1 column on mobile/tablet):
+
+S = span 1 column (short)
+M = span 2 columns (medium highlight)
+L = span 3 columns (full-width anchor/hero)
+
+Keep heights in a small set of spans to preserve rhythm:
+
+h ∈ {12, 18, 24} units (with grid-auto-rows: 8px → heights become 96px, 144px, 192px)
+
+Admins only provide content (image, title, desc, tags, optional importance).
+The system decides the size class {S|M|L} + height h from rules.
+
+This way you avoid 1.5‑width & arbitrary choices that create the wall effect.
+
+
+2) Placement rules (controlled randomness)
+Think of it like a playlist shuffler: “random,” but with constraints.
+Global rules
+
+R1: Insert an L tile every N cards (e.g., 6–8) to create anchors.
+R2: Never allow >2 M in a row; never allow >3 S in a row (prevents brick walls).
+R3: Balance column heights (choose the shortest columns first).
+R4: Content-aware promotion: if a card is marked important, increase probability it becomes M or L.
+R5: Use weighted randomness per slot:
+
+Default weights, e.g., S: 0.55, M: 0.35, L: 0.10, then adjust by R1–R4.
+
+
+R6: Keep height choices to {12, 18, 24} and bias taller heights for M/L.
+R7: On mobile (1 column), all entries are full width; vary only heights (content-driven).
+
+Why this avoids brick walls
+
+The system never places unlimited S next to S; it injects M/L as anchors.
+The column-balancing heuristic keeps the skyline uneven—in a good way.
+
+
+1) Define the “size system” (don’t let admins pick arbitrary widths)
+Use a small set of size classes and allowed spans that map well to your grid.
+For a 3‑column desktop grid (collapsing to 1 column on mobile/tablet):
+
+S = span 1 column (short)
+M = span 2 columns (medium highlight)
+L = span 3 columns (full-width anchor/hero)
+
+Keep heights in a small set of spans to preserve rhythm:
+
+h ∈ {12, 18, 24} units (with grid-auto-rows: 8px → heights become 96px, 144px, 192px)
+
+Admins only provide content (image, title, desc, tags, optional importance).
+The system decides the size class {S|M|L} + height h from rules.
+
+This way you avoid 1.5‑width & arbitrary choices that create the wall effect.
+
+
+2) Placement rules (controlled randomness)
+Think of it like a playlist shuffler: “random,” but with constraints.
+Global rules
+
+R1: Insert an L tile every N cards (e.g., 6–8) to create anchors.
+R2: Never allow >2 M in a row; never allow >3 S in a row (prevents brick walls).
+R3: Balance column heights (choose the shortest columns first).
+R4: Content-aware promotion: if a card is marked important, increase probability it becomes M or L.
+R5: Use weighted randomness per slot:
+
+Default weights, e.g., S: 0.55, M: 0.35, L: 0.10, then adjust by R1–R4.
+
+
+R6: Keep height choices to {12, 18, 24} and bias taller heights for M/L.
+R7: On mobile (1 column), all entries are full width; vary only heights (content-driven).
+
+Why this avoids brick walls
+
+The system never places unlimited S next to S; it injects M/L as anchors.
+The column-balancing heuristic keeps the skyline uneven—in a good way.
+
+5) Avoiding common pitfalls
+
+Content jumps (CLS): reserve space using fixed height spans (grid-auto-rows) and set image containers with a fixed aspect ratio (e.g., aspect-ratio: 16/9) to avoid reflow.
+Too many “specials”: cap M/L ratio (e.g., L ≤ 12%, M ≤ 40% over rolling window).
+Narrow breakpoints: below 360px, ensure min tap targets ≥ 44px and increase vertical spacing by +2–4px.
+A11y: ensure keyboard focus outlines, sufficient contrast, and semantic headings inside cards.
+
+
+6) If you really want admins to influence size (safely)
+Allow only labels: auto (default), feature (→ M bias), hero (→ L), but still pass through validator:
+
+Reject placement if it violates constraints (too many L’s or would create a run).
+Downgrade to a valid class and show a non-blocking toast (“Adjusted to preserve layout flow”).
+
+
+7) Summary recommendation
+
+Mobile: Use single column, vary heights for impact → aligns with your Image 2 observation.
+Desktop: Implement Image 1 “randomness” with size classes + rules, not editor-chosen widths.
+Start with the Masonry-ish CSS Grid + Controlled Randomizer code above. It handles both static initial render and live updates (just call addItem() per new post), while avoiding brick-wall patterns.
+
+
+If you share your actual breakpoints and whether you want this client-only or SSR/Static, I can tailor the exact code (including a single-file HTML you can drop in) and align it with your dark + neon/pastel brand from your previous notes.
+
