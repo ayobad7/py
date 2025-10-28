@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pastel Gradient Tag Pills — Dark & Night</title>
+  <style>
+    /* ------------------ Design Tokens ------------------ */
+    :root{
+      /* Dark (default) */
+      --bg:#0b0d10;
+      --panel:#101419;
+      --panel-2:#0e1318;
+      --line:#1c232c;
+      --text:#e7edf6;
+      --muted:#9aa6b2;
+      --focus:#7dd3fc;
+      --radius:14px;
+      --radius-sm:12px;
+      --shadow:0 10px 30px rgba(0,0,0,.35),0 2px 10px rgba(0,0,0,.25);
+      --s0:8px;--s1:12px;--s2:16px;--s3:20px;--s4:24px;
+
+      /* Pastel gradient stops (OK to tweak) */
+      --p-sky-1:#a5e3ff;  --p-sky-2:#7dd3fc;
+      --p-vi-1:#e0d4ff;   --p-vi-2:#c4b5fd;
+      --p-rose-1:#fecdd3; --p-rose-2:#fda4af;
+      --p-mint-1:#b9f3d0; --p-mint-2:#86efac;
+      --p-sun-1:#fde68a;  --p-sun-2:#fcd34d;
+      --p-lav-1:#e9d5ff;  --p-lav-2:#d8b4fe;
+      --p-peach-1:#ffd6b3;--p-peach-2:#ffbfa0;
+      --p-sea-1:#c7f9ff;  --p-sea-2:#99f0ff;
+      --p-grape-1:#f5d0fe;--p-grape-2:#f0abfc;
+      --p-lime-1:#e4fb96; --p-lime-2:#c9f266;
+      --p-ice-1:#d2f2ff;  --p-ice-2:#bde3ff;
+      --p-coral-1:#ffd6d1;--p-coral-2:#ffb4a8;
+    }
+
+    /* Optional NIGHT theme (deeper than dark) */
+    html[data-theme="night"]{
+      --bg:#07090c;
+      --panel:#0d1015;
+      --panel-2:#0a0e12;
+      --line:#161c25;
+      --text:#f0f6ff;
+      --muted:#9aa6b2;
+      --focus:#93c5fd;
+    }
+
+    /* ------------------ Page ------------------ */
+    html,body{height:100%;margin:0;background:
+      radial-gradient(900px 480px at 10% -10%, rgba(125,211,252,.10), transparent 40%),
+      radial-gradient(700px 420px at 90% 0%,  rgba(196,181,253,.12), transparent 40%),
+      var(--bg);
+      color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,"Inter","Segoe UI",Roboto,Arial,"Noto Sans";
+      -webkit-font-smoothing:antialiased; letter-spacing:.01em;
+    }
+    .wrap{max-width:1100px;margin:min(6vh,64px) auto;padding:0 var(--s3) var(--s4);}
+
+    /* ------------------ Header ------------------ */
+    .top{
+      display:flex;gap:var(--s3);align-items:center;justify-content:space-between;
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      border:1px solid var(--line);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);
+    }
+    .brand{display:flex;align-items:center;gap:10px;font-weight:650;}
+    .mark{width:26px;height:26px;border-radius:8px;
+      background:conic-gradient(from 210deg, #7dd3fc, #c4b5fd, #fda4af, #7dd3fc);}
+    .btn{appearance:none;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      color:var(--text);padding:8px 12px;border-radius:999px;cursor:pointer;font-size:14px;
+      transition:transform .12s ease,border-color .18s ease;}
+    .btn:hover{transform:translateY(-1px);border-color:color-mix(in oklab, var(--focus) 40%, var(--line));}
+    h1{margin:18px 6px 8px;font-size:clamp(22px,3vw,32px);letter-spacing:-.02em;}
+    p.lead{margin:0 6px var(--s3);color:var(--muted);}
+
+    /* ------------------ Card (for context) ------------------ */
+    .card{
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:var(--s3);display:grid;gap:var(--s2);
+    }
+    .card h2{margin:0;font-size:18px;letter-spacing:-.01em;}
+    .card p{margin:0;color:var(--muted);}
+
+    /* ------------------ Pill Grid ------------------ */
+    .pill-grid{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;}
+
+    /* Generic pill styles */
+    .pill{
+      --bg1:#fff; --bg2:#fff; /* will be overridden by classes */
+      --txt: color-mix(in oklab, var(--text) 85%, var(--muted));
+      --ring: color-mix(in oklab, var(--bg2) 60%, transparent);
+
+      position:relative;
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;
+      font-size:13px;color:var(--txt);
+      border:1px solid color-mix(in oklab, var(--bg2) 42%, var(--line));
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)),
+        linear-gradient(90deg, var(--bg1), var(--bg2));
+      box-shadow: 0 0 0 0 transparent, inset 0 1px 0 rgba(255,255,255,.05);
+      cursor:pointer; user-select:none;
+      transition:transform .12s ease, box-shadow .18s ease, border-color .18s ease, opacity .18s ease;
+      outline:none;
+    }
+    .pill .dot{width:8px;height:8px;border-radius:999px;background:currentColor;opacity:.9;
+      box-shadow:0 0 0 3px var(--ring);}
+    .pill:hover{transform:translateY(-1px); border-color:color-mix(in oklab, var(--bg2) 70%, var(--line));
+      box-shadow:0 6px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);}
+    .pill:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+    /* Selected state */
+    .pill[data-checked="true"]{
+      box-shadow:
+        0 0 0 3px color-mix(in oklab, var(--bg2) 30%, transparent),
+        inset 0 0 0 1px color-mix(in oklab, var(--bg2) 60%, transparent);
+      border-color: color-mix(in oklab, var(--bg2) 70%, var(--line));
+      opacity: 0.98;
+    }
+
+    /* Pastel gradient palettes (12+) */
+    .sky   { --bg1: var(--p-sky-1);   --bg2: var(--p-sky-2);   color:#073b56; }
+    .violet{ --bg1: var(--p-vi-1);    --bg2: var(--p-vi-2);    color:#2f105b; }
+    .rose  { --bg1: var(--p-rose-1);  --bg2: var(--p-rose-2);  color:#5b1220; }
+    .mint  { --bg1: var(--p-mint-1);  --bg2: var(--p-mint-2);  color:#114a2e; }
+    .sun   { --bg1: var(--p-sun-1);   --bg2: var(--p-sun-2);   color:#5a3f00; }
+    .lav   { --bg1: var(--p-lav-1);   --bg2: var(--p-lav-2);   color:#3f1864; }
+    .peach { --bg1: var(--p-peach-1); --bg2: var(--p-peach-2); color:#6a2d1b; }
+    .sea   { --bg1: var(--p-sea-1);   --bg2: var(--p-sea-2);   color:#0a4150; }
+    .grape { --bg1: var(--p-grape-1); --bg2: var(--p-grape-2); color:#59155f; }
+    .lime  { --bg1: var(--p-lime-1);  --bg2: var(--p-lime-2);  color:#3f5b00; }
+    .ice   { --bg1: var(--p-ice-1);   --bg2: var(--p-ice-2);   color:#113a57; }
+    .coral { --bg1: var(--p-coral-1); --bg2: var(--p-coral-2); color:#6a1f1a; }
+
+    /* Group header and summary */
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .summary{color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand"><span class="mark" aria-hidden="true"></span> Pastel Tag Palette</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="night">Night</button>
+        <button class="btn" id="clear">Clear</button>
+      </div>
+    </div>
+
+    <h1>Pick your tags</h1>
+    <p class="lead">Pills use **soft gradients** that pop on both Dark and Night themes. Click or press <kbd>Enter</kbd>/<kbd>Space</kbd> to select.</p>
+
+    <div class="card" role="group" aria-label="Tag selection block">
+      <h2>Palette</h2>
+      <p>Try mixing multiple accents. Selected tags get a subtle ring and stronger border.</p>
+
+      <div class="pill-grid" id="pillGrid">
+        <!-- Add/remove as you like; classes control gradient -->
+        <button class="pill sky"    data-value="Sky"       type="button"><span class="dot" aria-hidden="true"></span>Sky</button>
+        <button class="pill violet" data-value="Violet"    type="button"><span class="dot"></span>Violet</button>
+        <button class="pill rose"   data-value="Rose"      type="button"><span class="dot"></span>Rose</button>
+        <button class="pill mint"   data-value="Mint"      type="button"><span class="dot"></span>Mint</button>
+        <button class="pill sun"    data-value="Sun"       type="button"><span class="dot"></span>Sun</button>
+        <button class="pill lav"    data-value="Lavender"  type="button"><span class="dot"></span>Lavender</button>
+        <button class="pill peach"  data-value="Peach"     type="button"><span class="dot"></span>Peach</button>
+        <button class="pill sea"    data-value="Seafoam"   type="button"><span class="dot"></span>Seafoam</button>
+        <button class="pill grape"  data-value="Grape"     type="button"><span class="dot"></span>Grape</button>
+        <button class="pill lime"   data-value="Lime"      type="button"><span class="dot"></span>Lime</button>
+        <button class="pill ice"    data-value="Ice"       type="button"><span class="dot"></span>Ice</button>
+        <button class="pill coral"  data-value="Coral"     type="button"><span class="dot"></span>Coral</button>
+
+        <!-- You can duplicate with your own names: -->
+        <button class="pill sky"    data-value="Architecture" type="button"><span class="dot"></span>Architecture</button>
+        <button class="pill mint"   data-value="Nature"       type="button"><span class="dot"></span>Nature</button>
+        <button class="pill violet" data-value="Portrait"     type="button"><span class="dot"></span>Portrait</button>
+        <button class="pill rose"   data-value="Editorial"    type="button"><span class="dot"></span>Editorial</button>
+        <button class="pill sea"    data-value="Urban"        type="button"><span class="dot"></span>Urban</button>
+        <button class="pill peach"  data-value="Showcase"     type="button"><span class="dot"></span>Showcase</button>
+      </div>
+
+      <div class="row">
+        <div class="summary"><strong>Selected:</strong> <span id="selList">None</span></div>
+        <div class="summary" id="count">0 selected</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Night toggle (cycles between system dark and deeper night)
+    const nightBtn = document.getElementById('night');
+    nightBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      html.dataset.theme = html.dataset.theme === 'night' ? '' : 'night';
+      nightBtn.textContent = html.dataset.theme === 'night' ? 'System Dark' : 'Night';
+    });
+
+    // Pill selection logic
+    const grid = document.getElementById('pillGrid');
+    const selList = document.getElementById('selList');
+    const count = document.getElementById('count');
+    const clearBtn = document.getElementById('clear');
+
+    function updateSummary() {
+      const active = [...grid.querySelectorAll('.pill[data-checked="true"]')].map(p => p.dataset.value);
+      selList.textContent = active.length ? active.join(', ') : 'None';
+      count.textContent = `${active.length} selected`;
+    }
+
+    // Click and keyboard activation
+    grid.querySelectorAll('.pill').forEach(pill => {
+      pill.setAttribute('aria-pressed', 'false');
+      pill.setAttribute('tabindex', '0');
+
+      function toggle() {
+        const next = pill.getAttribute('data-checked') !== 'true';
+        pill.setAttribute('data-checked', next ? 'true' : 'false');
+        pill.setAttribute('aria-pressed', next ? 'true' : 'false');
+        updateSummary();
+      }
+
+      pill.addEventListener('click', toggle);
+      pill.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    });
+
+    clearBtn.addEventListener('click', () => {
+      grid.querySelectorAll('.pill').forEach(p => {
+        p.setAttribute('data-checked','false');
+        p.setAttribute('aria-pressed','false');
+      });
+      updateSummary();
+    });
+
+    updateSummary();
+  </script>
+</body>
+</html>
