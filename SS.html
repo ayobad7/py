@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Buttons & Chips – Storage / Borrowed / Lent</title>
+<style>
+  /* ================= TOKENS ================= */
+  :root{
+    /* Brandable core */
+    --accent: #ff6a3d;          /* Primary action (e.g., Return, Mark Returned) */
+    --accent-quiet: #ffe6dd;    /* Soft accent backgrounds / tertiary */
+
+    --danger: #e5484d;          /* Destructive */
+    --danger-quiet: #ffe5e7;
+
+    /* Semantic chip colors for due states */
+    --chip-neutral-bg: #eef1f5;  /* Neutral due (far away) */
+    --chip-neutral-fg: #4b5563;
+    --chip-warn-bg: #fff3e8;     /* Due soon (warning) */
+    --chip-warn-fg: #a8511f;
+    --chip-overdue-bg: #ffe9ec;  /* Overdue (danger pastel) */
+    --chip-overdue-fg: #b3261e;
+
+    /* Surface */
+    --bg: #f6f6f7;
+    --surface: #ffffff;
+    --text: #141417;
+    --muted: #6b6f76;
+    --stroke: #e9eaee;
+
+    --radius: 999px;
+    --radius-card: 16px;
+    --shadow: 0 6px 20px rgba(10,10,10,.06);
+    --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1115; --surface:#171a20; --text:#eef2f6; --muted:#a6adba; --stroke:#242833;
+      --accent:#ff7b4f; --accent-quiet: rgba(255,123,79,.14);
+      --danger:#ff6469; --danger-quiet: rgba(229,72,77,.16);
+
+      --chip-neutral-bg: #1f2430; --chip-neutral-fg:#cbd5e1;
+      --chip-warn-bg: rgba(255, 165, 0, .18); --chip-warn-fg:#ffb26b;
+      --chip-overdue-bg: rgba(229,72,77,.20); --chip-overdue-fg:#ff9aa0;
+
+      --shadow: 0 8px 22px rgba(0,0,0,.45);
+    }
+  }
+
+  /* ================= DEMO LAYOUT ================= */
+  *{box-sizing:border-box}
+  body{margin:0; font-family:var(--font); background:var(--bg); color:var(--text); }
+  .wrap{max-width:980px; margin:32px auto; padding:0 20px;}
+  h1{margin:0 0 10px; font-size:28px; font-weight:800}
+  .sub{margin:0 0 18px; color:var(--muted)}
+  section{background:var(--surface); border:1px solid var(--stroke); border-radius:var(--radius-card); padding:16px; box-shadow:var(--shadow); margin-bottom:18px}
+  h2{font-size:16px; margin:0 0 12px; letter-spacing:.2px}
+  .row{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 10px}
+  .caption{font-size:12.5px; color:var(--muted); margin:6px 0 10px}
+  .sep{height:1px; background:var(--stroke); margin:12px 0}
+
+  /* ================= BUTTONS ================= */
+  .btn{
+    --h: 36px;
+    height: var(--h);
+    padding: 0 14px;
+    border-radius: var(--radius);
+    border:1px solid transparent;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing:.1px;
+    display:inline-flex; align-items:center; gap:8px;
+    cursor:pointer; text-decoration:none; white-space:nowrap;
+    transition: transform .06s ease, background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn:active{ transform: translateY(0); }
+  .btn.sm{ --h: 30px; padding:0 12px; font-weight:700; font-size:12.5px }
+
+  .btn.primary{ background: var(--accent); color:#fff; border-color:transparent; }
+  .btn.secondary{ background: transparent; color: var(--accent); border-color: var(--accent); }
+  .btn.tertiary{ background: var(--accent-quiet); color: var(--accent); border-color: var(--stroke); }
+  .btn.danger{ background: var(--danger); color:#fff; border-color:transparent; }
+  .btn.danger-outline{ background: transparent; color: var(--danger); border-color: var(--danger); }
+
+  .btn[disabled]{ opacity:.55; pointer-events:none; }
+
+  .icon{ width:16px; height:16px; display:block }
+
+  /* Chips (section-level like View All / Add Item) */
+  .chip{
+    --h: 34px;
+    height: var(--h);
+    display:inline-flex; align-items:center; gap:8px;
+    padding:0 12px;
+    border-radius: var(--radius);
+    border:1px solid var(--stroke);
+    background: var(--surface);
+    color: var(--text);
+    font-weight:700; font-size:13px; text-decoration:none;
+    transition: transform .06s ease, background .2s ease, border-color .2s ease;
+  }
+  .chip:hover{ transform: translateY(-1px); }
+  .chip.primary{ background: var(--accent); color:#fff; border-color: transparent; }
+
+  /* ================= DUE/REMINDER CHIPS ================= */
+  .due{ 
+    height: 28px; padding: 0 10px; border-radius: 999px; 
+    display:inline-flex; align-items:center; gap:8px; 
+    font-weight:800; font-size:12.5px; border:1px solid transparent;
+  }
+  .due.neutral{ background: var(--chip-neutral-bg); color: var(--chip-neutral-fg); }
+  .due.warn{ background: var(--chip-warn-bg); color: var(--chip-warn-fg); border-color: rgba(168,81,31,.22); }
+  .due.overdue{ background: var(--chip-overdue-bg); color: var(--chip-overdue-fg); border-color: rgba(179,38,30,.22); }
+
+  /* Layout helpers for demo cards */
+  .card{
+    display:grid; gap:10px; grid-template-columns: 1fr auto;
+    align-items:center; padding:12px; border:1px dashed var(--stroke); border-radius:12px;
+  }
+  .meta{ color:var(--muted); font-size:13px }
+  .title{ font-weight:800; }
+  .right{ display:flex; align-items:center; gap:10px; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Buttons & Reminder Chips</h1>
+    <p class="sub">Reference sheet for <strong>Storage</strong>, <strong>Borrowed</strong>, and <strong>Lent</strong>. Tweak <code>:root</code> tokens to match brand.</p>
+
+    <!-- ================= SECTION HEADER ACTIONS ================= -->
+    <section>
+      <h2>Section Header Actions (“View All”, “Add Item”)</h2>
+      <div class="row">
+        #View All</a>
+        #Add Item</a>
+      </div>
+      <div class="caption">
+        Use a neutral chip for <strong>View All</strong> so it doesn’t compete with per-item actions. Keep <strong>Add Item</strong> filled (primary) to make it easy to discover.  
+        ✔️ Your current style is appropriate; no change required.
+      </div>
+    </section>
+
+    <!-- ================= BUTTON HIERARCHY ================= -->
+    <section>
+      <h2>Button Hierarchy (Global)</h2>
+      <div class="row">
+        <button class="btn primary" type="button">Primary</button>
+        <button class="btn secondary" type="button">Secondary</button>
+        <button class="btn tertiary" type="button">Tertiary</button>
+        <button class="btn danger" type="button">Danger</button>
+      </div>
+      <div class="caption">
+        Primary = most important action on a surface (e.g., <strong>Return</strong>, <strong>Mark Returned</strong>).  
+        Secondary = useful alternative (e.g., <strong>Extend</strong>, <strong>Remind</strong>).  
+        Tertiary = light actions (<strong>Share</strong>, <strong>Favorite</strong>).  
+        Danger = destructive / irreversible (<strong>Delete</strong>).
+      </div>
+      <div class="row">
+        <button class="btn primary sm">Primary .sm</button>
+        <button class="btn secondary sm">Secondary .sm</button>
+        <button class="btn tertiary sm">Tertiary .sm</button>
+        <button class="btn danger sm">Danger .sm</button>
+        <button class="btn secondary" disabled>Disabled</button>
+      </div>
+    </section>
+
+    <!-- ================= REMINDER/DUE CHIPS ================= -->
+    <section>
+      <h2>Reminder / Due Chips (Borrowed & Lent)</h2>
+      <div class="row">
+        <!-- Borrowed perspective -->
+        <span class="due neutral">3 days left</span>
+        <span class="due warn">Due today</span>
+        <span class="due overdue">Overdue 2 days</span>
+      </div>
+      <div class="caption">
+        <strong>Borrowed</strong> phrasing: “<em>X days left</em>”, “<em>Due today</em>”, “<em>Overdue N days</em>”.  
+        Colors: Neutral (far), Warning (soon), Overdue (past due). Pastel tones keep it noticeable without being aggressive.
+      </div>
+      <div class="row">
+        <!-- Lent perspective -->
+        <span class="due neutral">Due in 3 days</span>
+        <span class="due warn">Return today</span>
+        <span class="due overdue">Overdue 2 days</span>
+      </div>
+      <div class="caption">
+        <strong>Lent</strong> phrasing: “<em>Due in X days</em>”, “<em>Return today</em>”, “<em>Overdue N days</em>”.  
+        Different wording clarifies that the perspective is the lender’s.
+      </div>
+    </section>
+
+    <!-- ================= BORROWED ACTIONS ================= -->
+    <section>
+      <h2>Borrowed – Footer Actions</h2>
+      <div class="card" role="group" aria-label="Borrowed item footer">
+        <div>
+          <div class="title">Item name</div>
+          <div class="meta">Owner • Location • Category</div>
+        </div>
+        <div class="right">
+          <span class="due warn">Due today</span>
+          <button class="btn secondary" type="button">Extend</button>
+          <button class="btn primary" type="button">Return</button>
+        </div>
+      </div>
+      <div class="caption">
+        Emphasis order (left → right): <strong>due chip</strong> → <strong>Extend (secondary)</strong> → <strong>Return (primary)</strong>.  
+        Make the entire card clickable for details; keep these as action buttons only.
+      </div>
+    </section>
+
+    <!-- ================= LENT ACTIONS ================= -->
+    <section>
+      <h2>Lent – Footer Actions</h2>
+      <div class="card" role="group" aria-label="Lent item footer">
+        <div>
+          <div class="title">Item name</div>
+          <div class="meta">
+            <!-- Use the SAME person icon as Borrowed for consistency -->
+            Borrower: <strong>Ali</strong> • Location • Category
+          </div>
+        </div>
+        <div class="right">
+          <span class="due neutral">Due in 2 days</span>
+          <!-- Choose ONE of these Remind styles based on assertiveness -->
+          <button class="btn tertiary" type="button" title="Less assertive">Remind</button>
+          <button class="btn secondary" type="button" title="More assertive">Remind</button>
+          <!-- Main action -->
+          <button class="btn primary" type="button">Mark Returned</button>
+        </div>
+      </div>
+      <div class="caption">
+        <strong>Mark Returned</strong> should be <strong>Primary (filled accent)</strong> — it’s the end state you want.  
+        <strong>Remind</strong> can be <strong>Tertiary</strong> (quiet nudge) or <strong>Secondary</strong> (more assertive). Pick one; don’t show both in production.  
+        Show borrower name with the same person icon and positioning you use on Borrowed to minimize cognitive load.
+      </div>
+      <div class="sep"></div>
+      <div class="caption">
+        <strong>Optional add‑ons for Lent cards:</strong>
+        <ul>
+          <li><em>Last reminded</em> timestamp in the meta (e.g., “Reminded 3 days ago”).</li>
+          <li><em>Contact</em> affordance (e.g., small message icon) if messaging is integrated.</li>
+          <li><em>Status</em> chip after marking returned (e.g., “Returned on 25 Nov 2025”, neutral chip).</li>
+          <li>If items can be partially returned (sets), consider a mini menu instead of extra buttons.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= STORAGE SIDE NOTE ================= -->
+    <section>
+      <h2>Storage – Light Actions (for reference)</h2>
+      <div class="row">
+        <button class="btn tertiary" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 21s-6.716-4.227-9.293-6.804C.879 12.368.879 8.882 3.08 6.68a5.083 5.083 0 0 1 7.2 0l1.72 1.72 1.72-1.72a5.083 5.083 0 0 1 7.2 0c2.201 2.202 2.201 5.688 0 7.516C18.716 16.773 12 21 12 21z"/>
+          </svg>
+          Favorite
+        </button>
+        <button class="btn tertiary" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18 8a3 3 0 1 0-2.816-4H15a3 3 0 0 0 .184 1.016L8.91 9.27A3.001 3.001 0 0 0 6 8a3 3 0 1 0 2.816 4H9a3 3 0 0 0-.184-1.016l6.274-4.254A3.001 3.001 0 0 0 18 8zm0 8a3 3 0 0 0-2.816 2H15a3 3 0 1 0 .184-1.016l-6.274-4.254A3.001 3.001 0 0 0 6 16a3 3 0 1 0 2.816-4H9c0 .35.064.686.184 1.016l6.274 4.254A3.001 3.001 0 0 0 18 16z"/>
+          </svg>
+          Share
+        </button>
+      </div>
+      <div class="caption">
+        Keep these as <strong>Tertiary</strong> so they don’t compete with Borrowed/Lent actions. Whole card remains the primary link for “View”.
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
