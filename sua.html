@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BORO — Dashboard Masonry (No Titles)</title>
+<style>
+  :root{
+    /* Core theme */
+    --bg:#0f1115; --panel:#14171f; --panel-2:#10141b; --border:#23293a;
+    --text:#e9eef7; --muted:#9ea9bf; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --radius:14px; --radius-sm:10px; --gap:16px;
+
+    /* Category accents (used only inside content, not on edges) */
+    --acc-storage:#7bdcff;   /* cyan */
+    --acc-borrowed:#ffc36b;  /* amber */
+    --acc-lent:#8be36a;      /* lime */
+    --acc-people:#c79dff;    /* purple */
+    --acc-activity:#7bffb7;  /* mint */
+    --accent-alpha:.10;      /* 0.06–0.14 = subtle */
+
+    /* Controls */
+    --container: 1100px;
+    --image-pad: 12px;       /* your even padding around images */
+    --card-pad: 12px;
+    --masonry-gap: 18px;
+
+    /* Buttons */
+    --btn:#1a2130; --btn-bd:#2a3144; --btn-h:#20283a; --btn-text:#e8efff;
+    --btn-prim-from:#9cf07c; --btn-prim-to:#62d24b;
+  }
+
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f7f9fc; --panel:#ffffff; --panel-2:#f4f7fc; --border:#e7edf7;
+      --text:#0e1320; --muted:#556178; --shadow:0 8px 22px rgba(10,20,35,.08);
+      --btn:#eef2f9; --btn-bd:#dbe3f3; --btn-h:#e6edf9; --btn-text:#111623;
+    }
+  }
+
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{
+    margin:0;
+    font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    background:
+      radial-gradient(900px 600px at 10% -10%, rgba(139,227,106,.08), transparent 40%),
+      radial-gradient(800px 500px at 110% 40%, rgba(123,220,255,.06), transparent 40%),
+      var(--bg);
+    color:var(--text);
+  }
+
+  .wrap{ max-width:var(--container); margin:28px auto 80px; padding:0 18px; }
+
+  /* Top bar */
+  .top{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .brand{ font-weight:900; letter-spacing:.2px; font-size:18px; display:flex; gap:10px; align-items:center; }
+  .dot{ width:10px; height:10px; border-radius:50%; background:linear-gradient(180deg,var(--btn-prim-from),var(--btn-prim-to)); }
+  .actions{ display:flex; gap:10px; }
+  .btn{
+    -webkit-tap-highlight-color: transparent;
+    cursor:pointer; border:1px solid var(--btn-bd); background:var(--btn);
+    color:var(--btn-text); border-radius:10px; padding:9px 12px; font-weight:700; font-size:13px;
+  }
+  .btn:hover{ background:var(--btn-h); }
+  .btn--primary{
+    background:linear-gradient(180deg,var(--btn-prim-from),var(--btn-prim-to));
+    color:#0c120b; border-color:#5cc64a;
+  }
+
+  /* Filters (pure CSS radio buttons) */
+  .filters{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
+  .filters input{ position:absolute; opacity:0; pointer-events:none; }
+  .filter{
+    border:1px solid var(--btn-bd); background:var(--btn); color:var(--btn-text);
+    padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800; cursor:pointer;
+  }
+  /* Active pill look */
+  #all:checked       ~ .filters label[for="all"],
+  #storage:checked   ~ .filters label[for="storage"],
+  #borrowed:checked  ~ .filters label[for="borrowed"],
+  #lent:checked      ~ .filters label[for="lent"],
+  #people:checked    ~ .filters label[for="people"],
+  #activity:checked  ~ .filters label[for="activity"]{
+    outline:2px solid #3b465f;
+    background:var(--btn-h);
+  }
+
+  /* Masonry feed */
+  .feed{
+    column-gap: var(--masonry-gap);
+  }
+  @media (min-width: 0px){    .feed{ column-count: 1; } }
+  @media (min-width: 600px){  .feed{ column-count: 2; } }
+  @media (min-width: 900px){  .feed{ column-count: 3; } }
+  @media (min-width: 1200px){ .feed{ column-count: 4; } }
+
+  /* Filter logic (hide non-matching categories) */
+  /* default “all” is checked in markup */
+  #storage:checked  ~ .feed [data-cat]:not([data-cat="storage"]){ display:none; }
+  #borrowed:checked ~ .feed [data-cat]:not([data-cat="borrowed"]){ display:none; }
+  #lent:checked     ~ .feed [data-cat]:not([data-cat="lent"]){ display:none; }
+  #people:checked   ~ .feed [data-cat]:not([data-cat="people"]){ display:none; }
+  #activity:checked ~ .feed [data-cat]:not([data-cat="activity"]){ display:none; }
+
+  /* Card base */
+  .card{
+    break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 var(--masonry-gap);
+    background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--panel);
+    border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+    overflow:hidden; position:relative;
+  }
+
+  /* Accent tokens per category (used internally only) */
+  .card[data-cat="storage"] { --acc:var(--acc-storage); }
+  .card[data-cat="borrowed"]{ --acc:var(--acc-borrowed); }
+  .card[data-cat="lent"]    { --acc:var(--acc-lent); }
+  .card[data-cat="people"]  { --acc:var(--acc-people); }
+  .card[data-cat="activity"]{ --acc:var(--acc-activity); }
+
+  /* Subtle internal glow (not on edges; respects padding) */
+  .card::after{
+    content:""; position:absolute; inset:10% 10% 35% 10%; border-radius:18px;
+    background: radial-gradient(220px 140px at 70% 18%, color-mix(in oklab, var(--acc, #000) 70%, transparent) var(--accent-alpha), transparent 70%);
+    pointer-events:none; filter: blur(16px); opacity:.6;
+  }
+
+  /* Media */
+  .media{ padding:var(--image-pad); padding-bottom:0; }
+  .media-inner{
+    border-radius:var(--radius-sm); overflow:hidden; border:1px solid #1f2536; background:#0b0f16;
+    aspect-ratio: 16/12; display:grid; place-items:center; position:relative;
+  }
+  .media img{ width:100%; height:100%; object-fit:cover; display:block; }
+  /* Soft bottom tint overlay inside image (non-edge cue) */
+  .media-inner::after{
+    content:""; position:absolute; inset:0;
+    background: linear-gradient(to top, color-mix(in oklab, var(--acc, #000) 22%, transparent) 0%, transparent 55%);
+    opacity:.35; pointer-events:none;
+  }
+
+  /* Body */
+  .body{ padding:var(--card-pad); display:grid; gap:8px; position:relative; }
+  .title-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .title{ font-weight:800; font-size:15px; letter-spacing:.1px; }
+  .chip{
+    font-size:11px; font-weight:800; padding:4px 8px; border-radius:999px;
+    color:#0c120b; background:color-mix(in oklab, var(--acc, #8be36a) 70%, black 0%);
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,.15);
+  }
+  .meta{ color:var(--muted); font-size:12px; display:grid; gap:6px; }
+  .meta .line{ display:flex; align-items:center; gap:8px; }
+  .dot{
+    width:6px; height:6px; border-radius:50%;
+    background: color-mix(in oklab, var(--acc, #7bdcff) 80%, #7a849b 20%);
+    box-shadow: 0 0 0 2px rgba(0,0,0,.25);
+  }
+
+  .actions{ display:flex; gap:8px; padding:0 var(--card-pad) var(--card-pad); }
+  .pill{
+    border:1px solid var(--btn-bd); background:var(--btn); color:var(--btn-text);
+    padding:7px 10px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .pill--accent{
+    background: color-mix(in oklab, var(--acc, #8be36a) 24%, var(--btn));
+    border-color: color-mix(in oklab, var(--acc, #8be36a) 50%, var(--btn-bd));
+  }
+  .pill:hover{ background:var(--btn-h); }
+
+  /* People / Activity text-only cards */
+  .info{ padding:var(--card-pad); display:grid; gap:10px; color:var(--muted); font-size:13px; }
+  .info h3{ margin:0; font-size:15px; color:var(--text); }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .tag{ border:1px solid var(--btn-bd); background:var(--btn); color:var(--btn-text); padding:6px 9px; border-radius:999px; font-size:12px; font-weight:700; }
+
+  /* Reduced motion nicety */
+  @media (prefers-reduced-motion: no-preference){
+    .card{ transition: transform .18s ease, box-shadow .18s ease; }
+    .card:hover{ transform: translateY(-2px); box-shadow: 0 18px 50px rgba(0,0,0,.45); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <div class="top">
+      <div class="brand"><span class="dot"></span> BORO</div>
+      <div class="actions">
+        <button class="btn">View All</button>
+        <button class="btn btn--primary">+ Add Item</button>
+      </div>
+    </div>
+
+    <!-- Filters (pure CSS) -->
+    <input id="all" type="radio" name="f" checked>
+    <input id="storage" type="radio" name="f">
+    <input id="borrowed" type="radio" name="f">
+    <input id="lent" type="radio" name="f">
+    <input id="people" type="radio" name="f">
+    <input id="activity" type="radio" name="f">
+
+    <div class="filters" aria-label="Filters">
+      <label class="filter" for="all">All</label>
+      <label class="filter" for="storage">Storage</label>
+      <label class="filter" for="borrowed">Borrowed</label>
+      <label class="filter" for="lent">Lent</label>
+      <label class="filter" for="people">People</label>
+      <label class="filter" for="activity">Activity</label>
+    </div>
+
+    <!-- Masonry feed (no section titles) -->
+    <section class="feed" aria-label="Cards">
+      <!-- Storage cards -->
+      <article class="card" data-cat="storage">
+        <div class="media">
+          <div class="media-inner">
+            <img src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200&auto=format&fit=crop" altv>
+        </div>
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Vintage Camera</div>
+            <span class="chip">Storage</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> Category: Electronics</div>
+            <div class="line"><span class="dot"></span> Location: Office</div>
+            <div class="line"><span class="dot"></span> Mode: Free</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="pill">Share</button>
+          <button class="pill pill--accent">Favorite</button>
+        </div>
+      </article>
+
+      <article class="card" data-cat="storage">
+        <div class="media">
+          <div class="media-inner">
+            <img src="https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?q=80&w=1200&auto=format&fit=crop </div>
+        </div>
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Meyay</div>
+            <span class="chip">Storage</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> Category: Office</div>
+            <div class="line"><span class="dot"></span> Location: Where</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="pill">Share</button>
+          <button class="pill pill--accent">Favorite</button>
+        </div>
+      </article>
+
+      <!-- Borrowed cards -->
+      <article class="card" data-cat="borrowed">
+        <div class="media">
+          <div class="media-inner">
+            <img src="https://images.unsplash.com/photo-15415327117b6b77?q=80&w=1200&auto=format&fit=crop
+          </div>
+        </div>
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Cordless Drill</div>
+            <span class="chip">Borrowed</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> From: Alex</div>
+            <div class="line"><span class="dot"></span> Due: Nov 14</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="pill">Message</button>
+          <button class="pill pill--accent">Return</button>
+        </div>
+      </article>
+
+      <article class="card" data-cat="borrowed">
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Projector (no image)</div>
+            <span class="chip">Borrowed</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> From: Zee • Pickup: Office pantry</div>
+            <div class="line"><span class="dot"></span> Due: Nov 28 • Notes: Keep in case, lens cap on</div>
+          </div>
+          <div class="actions">
+            <button class="pill">Message</button>
+            <button class="pill pill--accent">Return</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Lent cards -->
+      <article class="card" data-cat="lent">
+        <div class="media">
+          <div class="media-inner">
+            <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1200&auto=format&fit=crop"</div>
+        </div>
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Studio Headphones</div>
+            <span class="chip">Lent</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> To: Mira</div>
+            <div class="line"><span class="dot"></span> Due: Nov 20 • Status: On time</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="pill">Ping</button>
+          <button class="pill pill--accent">Extend</button>
+        </div>
+      </article>
+
+      <article class="card" data-cat="lent">
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Camping Stove</div>
+            <span class="chip">Lent</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> To: Bad Ayo</div>
+            <div class="line"><span class="dot"></span> Due: Dec 01 • Status: Awaiting pickup</div>
+          </div>
+          <div class="actions">
+            <button class="pill">Cancel</button>
+            <button class="pill pill--accent">Message</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- People / connections -->
+      <article class="card" data-cat="people">
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Connections</div>
+            <span class="chip">People</span>
+          </div>
+          <div class="row">
+            <span class="tag">Alex</span>
+            <span class="tag">Mira</span>
+            <span class="tag">Sam</span>
+            <span class="tag">Zee</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Activity (text-only) -->
+      <article class="card" data-cat="activity">
+        <div class="info">
+          <h3>Recent Activity</h3>
+          <p>• You added “Soldering Station” to Storage</p>
+          <p>• Mira extended “Studio Headphones” by 3 days</p>
+          <p>• You favorited Alex’s toolbox</p>
+        </div>
+      </article>
+
+      <!-- More storage for visual balance -->
+      <article class="card" data-cat="storage">
+        <div class="media">
+          <div class="media-inner">
+            <img src="https://images.unsplash.com/photo-1487058792275ca7?q=80&w=1200&auto=format&fit=crop
+          </div>
+        </div>
+        <div class="body">
+          <div class="title-row">
+            <div class="title">Soldering Station</div>
+            <span class="chip">Storage</span>
+          </div>
+          <div class="meta">
+            <div class="line"><span class="dot"></span> Category: Tools • Power: 60W</div>
+            <div class="line"><span class="dot"></span> Location: Home</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="pill">Share</button>
+          <button class="pill pill--accent">Favorite</button>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>
