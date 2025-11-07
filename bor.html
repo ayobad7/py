@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BORO — Home (Dashboard)</title>
+<style>
+  :root{
+    /* Palette */
+    --bg: #0f1115;
+    --panel: #141821;
+    --panel-2: #12161d;
+    --border: #242a38;
+    --text: #e7ecf4;
+    --muted: #a9b2c6;
+    --ring: #2f394e;
+    --shadow: 0 12px 40px rgba(0,0,0,.35);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --gap: 16px;
+
+    /* Accents per category (subtle, neon/pastel) */
+    --acc-storage:  #7bdcff; /* cyan */
+    --acc-borrowed: #ffc36b; /* amber */
+    --acc-lent:     #8be36a; /* lime */
+    --acc-people:   #c79dff; /* purple */
+
+    /* Buttons */
+    --btn: #1c2330;
+    --btn-bd: #2c3548;
+    --btn-h: #242d40;
+    --btn-text: #dfe7fb;
+    --btn-prim-from:#9cf07c; --btn-prim-to:#62d24b;
+
+    /* Masonry columns at breakpoints (tweak freely) */
+    --cols-sm: 1;
+    --cols-md: 2;
+    --cols-lg: 3;
+    --cols-xl: 4;
+  }
+
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f8fb; --panel:#ffffff; --panel-2:#f5f7fb; --border:#e8ecf4; --text:#0e1320; --muted:#556178; --ring:#dbe3f3; }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body{
+    margin:0;
+    font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    background:
+      radial-gradient(900px 600px at 10% -10%, rgba(139,227,106,.08), transparent 40%),
+      radial-gradient(800px 500px at 110% 40%, rgba(123,220,255,.06), transparent 40%),
+      var(--bg);
+    color: var(--text);
+  }
+
+  .wrap{ max-width:1200px; margin: 28px auto 80px; padding: 0 20px; }
+
+  /* Top bar */
+  .top{
+    display:flex; align-items:center; gap:12px; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px;
+    font-size: 18px;
+  }
+  .badge{ color:#0e1510; background: linear-gradient(180deg,var(--btn-prim-from),var(--btn-prim-to));
+    padding:3px 8px; border-radius:999px; font-size:11px; font-weight:800; }
+  .actions{ display:flex; gap:10px; }
+  .btn{
+    -webkit-tap-highlight-color: transparent;
+    cursor:pointer; border:1px solid var(--btn-bd); background:var(--btn);
+    color:var(--btn-text); border-radius:10px; padding:9px 12px; font-weight:700; font-size:13px;
+  }
+  .btn:hover{ background:var(--btn-h); }
+  .btn--primary{
+    background: linear-gradient(180deg, var(--btn-prim-from), var(--btn-prim-to));
+    color:#0b110a; border-color:#5cc64a;
+  }
+
+  /* Stat row */
+  .stats{
+    display:grid; grid-template-columns: repeat(12, 1fr); gap: 14px; margin-bottom: 16px;
+  }
+  .stat{
+    grid-column: span 4; background: var(--panel); border:1px solid var(--border);
+    border-radius: var(--radius); padding:14px; box-shadow: var(--shadow);
+    display:flex; align-items:center; justify-content: space-between;
+  }
+  .stat .kpi{ font-size:22px; font-weight:800; }
+  .stat .label{ color:var(--muted); font-size:12px; }
+
+  /* Masonry feed */
+  .feed{
+    column-gap: 18px;
+  }
+  @media (min-width: 0px){    .feed{ column-count: var(--cols-sm); } }
+  @media (min-width: 600px){  .feed{ column-count: var(--cols-md); } }
+  @media (min-width: 900px){  .feed{ column-count: var(--cols-lg); } }
+  @media (min-width: 1200px){ .feed{ column-count: var(--cols-xl); } }
+
+  /* Card base */
+  .card{
+    break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--panel);
+    border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .card__accent{
+    height: 3px; background: var(--accent, #8be36a);
+  }
+  .card__media{
+    padding: 12px; padding-bottom: 0;
+  }
+  .card__media-inner{
+    border-radius: var(--radius-sm); overflow:hidden; border:1px solid #1f2536; background:#0b0f16;
+    aspect-ratio: 16/12; display:grid; place-items:center;
+  }
+  .card__media img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  .card__body{ padding: 12px 12px 10px; display:grid; gap: 8px; }
+  .title-row{ display:flex; align-items:center; justify-content: space-between; gap:8px; }
+  .title{ font-weight:800; font-size:15px; }
+  .chip{
+    font-size:11px; font-weight:800; padding:4px 8px; border-radius:999px;
+    color:#0e1510; background: var(--chip-bg, #8be36a);
+  }
+  .meta{ color:var(--muted); font-size:12px; display:grid; gap:6px; }
+  .actions-row{ display:flex; gap:8px; padding: 0 12px 12px; }
+  .pill{
+    border:1px solid #2a3144; background:#1b2130; color:#dbe3f5;
+    padding:7px 10px; border-radius:999px; font-size:12px; font-weight:700;
+  }
+
+  /* Variants — only accents + chips change; structure stays identical */
+  .is-storage  { --accent: var(--acc-storage);  --chip-bg: var(--acc-storage); }
+  .is-borrowed { --accent: var(--acc-borrowed); --chip-bg: var(--acc-borrowed); }
+  .is-lent     { --accent: var(--acc-lent);     --chip-bg: var(--acc-lent); }
+  .is-people   { --accent: var(--acc-people);   --chip-bg: var(--acc-people); }
+
+  /* “Info” cards (no image) */
+  .info{ padding: 14px; }
+  .info h3{ margin:0 0 8px; font-size:16px; }
+  .info p{ margin:0; color:var(--muted); font-size:13px; line-height:1.45; }
+  .info .row{ display:flex; gap:10px; margin-top:12px; flex-wrap: wrap; }
+
+  /* Responsive tweaks */
+  @media (max-width: 720px){
+    .stats .stat{ grid-column: span 12; }
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .card{ transition: transform .18s ease, box-shadow .18s ease; }
+    .card:hover{ transform: translateY(-2px); box-shadow: 0 18px 50px rgba(0,0,0,.45); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Top -->
+    <div class="top">
+      <div class="brand">BORO <span class="badge">beta</span></div>
+      <div class="actions">
+        <button class="btn">View All</button>
+        <button class="btn btn--primary">+ Add Item</button>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <section class="stats" aria-label="Overview">
+      <div class="stat">
+        <div>
+          <div class="kpi">11</div>
+          <div class="label">Storage items</div>
+        </div>
+        <span class="chip" style="--chip-bg: var(--acc-storage)">Storage</span>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="kpi">2</div>
+          <div class="label">Borrowed now</div>
+        </div>
+        <span class="chip" style="--chip-bg: var(--acc-borrowed)">Borrowed</span>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="kpi">4</div>
+          <div class="label">Lent out</div>
+        </div>
+        <span class="chip" style="--chip-bg: var(--acc-lent)">Lent</span>
+      </div>
+    </section>
+
+    <!-- Masonry feed mixing different content types -->
+    <section class="feed" aria-label="Recent & Active">
+      <!-- Storage item card -->
+      <article class="card is-storage">
+        <div class="card__accent"></div>
+        <div class="card__media">
+          <div class="card__media-inner">
+            <img src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200&auto=format&fit=crop" alt="Vintage  </div>
+        <div class="card__body">
+          <div class="title-row">
+            <div class="title">Vintage Camera</div>
+            <span class="chip">Storage</span>
+          </div>
+          <div class="meta">
+            <div>Category: Electronics • Condition: Good</div>
+            <div>Location: Office</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="pill">Share</button>
+          <button class="pill">Favorite</button>
+        </div>
+      </article>
+
+      <!-- Borrowed item card -->
+      <article class="card is-borrowed">
+        <div class="card__accent"></div>
+        <div class="card__media">
+          <div class="card__media-inner">
+            <img src="https://images.unsplash.com/photo-1541532713592-79a0317b6b77?q=80&w=1200&auto=format&fit=crop" alt="Cordless drill>
+        <div class="card__body">
+          <div class="title-row">
+            <div class="title">Cordless Drill</div>
+            <span class="chip">Borrowed</span>
+          </div>
+          <div class="meta">
+            <div>From: Alex • Due: Nov 14</div>
+            <div>Mode: Free • Status: In use</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="pill">Return</button>
+          <button class="pill">Message</button>
+        </div>
+      </article>
+
+      <!-- Lent item card -->
+      <article class="card is-lent">
+        <div class="card__accent"></div>
+        <div class="card__media">
+          <div class="card__media-inner">
+            <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1200&auto=format&fit=crop </div>
+        </div>
+        <div class="card__body">
+          <div class="title-row">
+            <div class="title">Studio Headphones</div>
+            <span class="chip">Lent</span>
+          </div>
+          <div class="meta">
+            <div>To: Mira • Due: Nov 20</div>
+            <div>Status: On time</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="pill">Extend</button>
+          <button class="pill">Ping</button>
+        </div>
+      </article>
+
+      <!-- People / Connection card (no media) -->
+      <article class="card is-people">
+        <div class="card__accent"></div>
+        <div class="info">
+          <h3>Connections</h3>
+          <p>Quick access to people you borrow/lend with the most.</p>
+          <div class="row">
+            <span class="pill">Alex</span>
+            <span class="pill">Mira</span>
+            <span class="pill">Sam</span>
+            <span class="pill">Zee</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Activity feed card -->
+      <article class="card">
+        <div class="card__accent" style="background:linear-gradient(90deg,#7bdcff,#c79dff)"></div>
+        <div class="info">
+          <h3>Recent Activity</h3>
+          <p>• You added “Soldering Station” to Storage</p>
+          <p>• Mira extended “Studio Headphones” by 3 days</p>
+          <p>• You favorited Alex’s toolbox</p>
+        </div>
+      </article>
+
+      <!-- Another storage card -->
+      <article class="card is-storage">
+        <div class="card__accent"></div>
+        <div class="card__media">
+          <div class="card__media-inner">
+            <img src="https://images.unsplash.com/photo-1487058792275-07?q=80&w=1200&auto=format&fit=crop
+          </div>
+        </div>
+        <div class="card__body">
+          <div class="title-row">
+            <div class="title">Soldering Station</div>
+            <span class="chip">Storage</span>
+          </div>
+          <div class="meta">
+            <div>Category: Tools • Power: 60W</div>
+            <div>Location: Home</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="pill">Share</button>
+          <button class="pill">Favorite</button>
+        </div>
+      </article>
+
+      <!-- Borrowed with longer text (tests masonry height) -->
+      <article class="card is-borrowed">
+        <div class="card__accent"></div>
+        <div class="card__body">
+          <div class="title-row">
+            <div class="title">Projector (No Image)</div>
+            <span class="chip">Borrowed</span>
+          </div>
+          <div class="meta">
+            <div>From: Zee • Due: Nov 28 • Pickup at Office pantry shelf</div>
+            <div>Notes: Please keep in case, lens cap on. Bulb hour limit: 150 hrs.</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="pill">Return</button>
+          <button class="pill">Message</button>
+        </div>
+      </article>
+
+      <!-- Lent with people details -->
+      <article class="card is-lent">
+        <div class="card__accent"></div>
+        <div class="card__body">
+          <div class="title-row">
+            <div class="title">Camping Stove</div>
+            <span class="chip">Lent</span>
+          </div>
+          <div class="meta">
+            <div>To: Bad Ayo • Due: Dec 01</div>
+            <div>Status: Awaiting pickup</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="pill">Cancel</button>
+          <button class="pill">Message</button>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>
