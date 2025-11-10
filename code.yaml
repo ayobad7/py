@@ -3,42 +3,70 @@ version: 1.0.0
 schema: v1
 
 models:
-  # 1) Planning & multi-file agenting
-  - name: DeepSeek (plan/agent)
+  # ─────────────────────────────────────────────────────────────
+  # DeepSeek (Low) — planning / reasoning with minimal drift
+  # Use for: multi-file plans, structured analysis, safe proposals
+  # ─────────────────────────────────────────────────────────────
+  - name: DeepSeek • Low
     provider: openrouter
     model: deepseek/deepseek-chat-v3.1
     apiBase: https://openrouter.ai/api/v1
     apiKey: ${OPENROUTER_API_KEY}
     capabilities: [tool_use]
-    # Tighter, reasoned but not verbose; enough room for plans
-    # (Continue forwards these as defaults per model)
     temperature: 0.2
     maxTokens: 2000
-    stop:
-      - "```"
+    # Stop when code fences appear so it doesn't ramble after patches
+    stop: ["```"]
     requestOptions:
       extraBodyProperties:
-        transforms: []   # keep code blocks pristine
+        transforms: []  # keep code/JSON pristine (no router transforms)
 
-  # 2) Surgical code edits & precise diffs
-  - name: Qwen Coder (edits)
+  # ─────────────────────────────────────────────────────────────
+  # DeepSeek (High) — creative UI / layout ideation
+  # Use for: “give me 3 iterations based on these references…”
+  # ─────────────────────────────────────────────────────────────
+  - name: DeepSeek • High (Creative)
+    provider: openrouter
+    model: deepseek/deepseek-chat-v3.1
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: ${OPENROUTER_API_KEY}
+    capabilities: [tool_use]
+    temperature: 0.8        # bolder ideas & more variation
+    maxTokens: 2500
+    requestOptions:
+      extraBodyProperties:
+        transforms: []
+
+  # ─────────────────────────────────────────────────────────────
+  # Qwen Coder (Low) — surgical, deterministic code edits
+  # Use for: patch-only diffs, strict formatting, test updates
+  # ─────────────────────────────────────────────────────────────
+  - name: Qwen Coder • Low
     provider: openrouter
     model: qwen/qwen-2.5-coder-32b-instruct
     apiBase: https://openrouter.ai/api/v1
     apiKey: ${OPENROUTER_API_KEY}
     capabilities: [tool_use]
-    temperature: 0.1     # crisper patches
-    maxTokens: 1200      # shorter, patch-sized responses
-    stop:
-      - "```"
+    temperature: 0.1        # crisp, repeatable diffs
+    maxTokens: 1200
+    stop: ["```"]
     requestOptions:
       extraBodyProperties:
         transforms: []
 
-# (Optional) Per-request fallback template you can copy into a task when needed:
-# requestOptions:
-#   extraBodyProperties:
-#     models:
-#       - deepseek/deepseek-chat-v3.1
-#       - qwen/qwen-2.5-coder-32b-instruct
-#     route: fallback
+  # ─────────────────────────────────────────────────────────────
+  # Qwen Coder (High) — “code-aware” creativity
+  # Use for: alternative component structures, API wiring options
+  # (still a code model, just allows more exploration)
+  # ─────────────────────────────────────────────────────────────
+  - name: Qwen Coder • High (Creative)
+    provider: openrouter
+    model: qwen/qwen-2.5-coder-32b-instruct
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: ${OPENROUTER_API_KEY}
+    capabilities: [tool_use]
+    temperature: 0.7        # exploratory but not chaotic
+    maxTokens: 1800
+    requestOptions:
+      extraBodyProperties:
+        transforms: []
