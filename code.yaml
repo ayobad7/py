@@ -1,17 +1,44 @@
+name: Local Assistant
+version: 1.0.0
+schema: v1
+
 models:
-  - name: DeepSeek V3.1
+  # 1) Planning & multi-file agenting
+  - name: DeepSeek (plan/agent)
     provider: openrouter
     model: deepseek/deepseek-chat-v3.1
     apiBase: https://openrouter.ai/api/v1
     apiKey: ${OPENROUTER_API_KEY}
     capabilities: [tool_use]
+    # Tighter, reasoned but not verbose; enough room for plans
+    # (Continue forwards these as defaults per model)
+    temperature: 0.2
+    maxTokens: 2000
+    stop:
+      - "```"
     requestOptions:
       extraBodyProperties:
-        transforms: []
+        transforms: []   # keep code blocks pristine
 
-  - name: Qwen Coder 32B
+  # 2) Surgical code edits & precise diffs
+  - name: Qwen Coder (edits)
     provider: openrouter
     model: qwen/qwen-2.5-coder-32b-instruct
     apiBase: https://openrouter.ai/api/v1
     apiKey: ${OPENROUTER_API_KEY}
     capabilities: [tool_use]
+    temperature: 0.1     # crisper patches
+    maxTokens: 1200      # shorter, patch-sized responses
+    stop:
+      - "```"
+    requestOptions:
+      extraBodyProperties:
+        transforms: []
+
+# (Optional) Per-request fallback template you can copy into a task when needed:
+# requestOptions:
+#   extraBodyProperties:
+#     models:
+#       - deepseek/deepseek-chat-v3.1
+#       - qwen/qwen-2.5-coder-32b-instruct
+#     route: fallback
