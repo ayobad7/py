@@ -47,7 +47,7 @@ models:
     apiBase: https://openrouter.ai/api/v1
     apiKey: ${OPENROUTER_API_KEY}
     capabilities: [tool_use]
-    temperature: 0.1        # crisp, repeatable diffs
+    temperature: 0.2        # crisp, repeatable diffs
     maxTokens: 1200
     stop: ["```"]
     requestOptions:
