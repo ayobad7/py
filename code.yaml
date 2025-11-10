@@ -1,0 +1,17 @@
+models:
+  - name: DeepSeek V3.1
+    provider: openrouter
+    model: deepseek/deepseek-chat-v3.1
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: ${OPENROUTER_API_KEY}
+    capabilities: [tool_use]
+    requestOptions:
+      extraBodyProperties:
+        transforms: []
+
+  - name: Qwen Coder 32B
+    provider: openrouter
+    model: qwen/qwen-2.5-coder-32b-instruct
+    apiBase: https://openrouter.ai/api/v1
+    apiKey: ${OPENROUTER_API_KEY}
+    capabilities: [tool_use]
