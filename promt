@@ -1,0 +1,27 @@
+Task: Implement “Remind” button behavior for (A) the lent tag card in Home and (B) the Single Item view.
+
+Business rules:
+- The Remind button is enabled only when time-to-due < 3 days (i.e., dueDate - now < 3*24h).
+- On click, route to/send a borrower notification with message based on due status:
+  * If 1–2 days left:  "{ownerName} reminds you have {daysLeft} day(s) left to return {itemName}."
+  * If due today (0 days left or <= 24h): "{ownerName} reminds you to return {itemName} today."
+  * If overdue (> 0 days past): "{ownerName} reminds you to return {itemName}, overdue by {daysOverdue} day(s)."
+
+Implementation constraints:
+- Do NOT load the whole repo; modify only the provided components.
+- Produce a unified git diff patch.
+- Keep types strict (TypeScript), do not change public props.
+- Extract a small helper: `buildReminderMessage({ ownerName, itemName, dueDate, now })`.
+- Add the same Remind button to Single Item view with identical logic & disabled state.
+
+Inputs available:
+- Fields: {list your real fields, e.g., borrowerId, ownerName, itemName, dueDate, itemId}
+- Notification method: {e.g., notifyBorrower(borrowerId, { message, itemId })} OR navigate to “/notify?…”.
+
+Edge cases:
+- Missing/invalid dueDate: disable button and show tooltip “No due date”.
+- Timezone: use `now` from client; treat partial days with ceil/floor as described below.
+
+Output:
+- One unified `git diff` patch only, touching the two components and adding the helper in `utils/reminders.ts`.
+- Keep output under 600 tokens.
