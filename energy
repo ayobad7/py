@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Energy Planner</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1216;
+      --panel: #171b22;
+      --text: #e9eef7;
+      --muted: #94a3b8;
+      --primary: #4cc2ff;
+      --accent: #7b77ff;
+      --danger: #ff5c73;
+      --border: #233042;
+      --btn: #232b3a;
+      --btn-hover: #2a3346;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: start center;
+      background: radial-gradient(1200px 720px at 15% 0%, #12202b 0%, var(--bg) 55%);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Inter", Arial, sans-serif;
+      color: var(--text);
+      padding: 24px;
+    }
+    .container { width: 100%; max-width: 900px; }
+    header { margin-bottom: 20px; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .sub { color: var(--muted); font-size: 14px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; margin: 12px 0; box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .card h2 { margin: 0 0 12px; font-size: 18px; }
+    .grid { display: grid; gap: 12px; }
+    @media (min-width: 640px) { .grid.cols-2 { grid-template-columns: repeat(2, 1fr); } }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input[type="number"], input[type="datetime-local"], input[type="text"] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0b0f14; color: var(--text); font-size: 14px; outline: none;
+    }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--btn); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 600;
+      transition: background .15s, transform .05s;
+    }
+    .btn:hover { background: var(--btn-hover); }
+    .btn:active { transform: scale(.98); }
+    .btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #0b0f14; border: none; }
+    .result {
+      margin-top: 10px; padding: 10px 12px; background: #0b0f14; border: 1px solid var(--border);
+      border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 13px;
+    }
+    .note { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .footer { margin-top: 12px; color: var(--muted); font-size: 12px; text-align: center; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #0b0f14; border: 1px solid var(--border); margin-left: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Energy Planner</h1>
+      <div class="sub" id="tzInfo">Detecting time zone…</div>
+    </header>
+
+    <!-- Section 1: Reach Max (500) -->
+    <section class="card" id="sec-cap">
+      <h2>Reach Max (500)</h2>
+      <div class="grid cols-2">
+        <div>
+          <label for="capE0">Current energy (0–500)</label>
+          <input id="capE0" type="number" inputmode="numeric" min="0" max="500" placeholder="e.g., 120" />
+        </div>
+        <div>
+          <label for="capT0">Measured at</label>
+          <input id="capT0" type="datetime-local" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" id="capCalc">Calculate</button>
+        <button class="btn" id="capReset">Reset</button>
+      </div>
+      <div class="result" id="capOut"></div>
+      <div class="note">Assumes +1 energy every 9 minutes, capped at 500. Discrete, no fractions.</div>
+    </section>
+
+    <!-- Section 2: Energy at a Target Date/Time -->
+    <section class="card" id="sec-energyAt">
+      <h2>Energy at a Target Date/Time</h2>
+      <div class="grid cols-2">
+        <div>
+          <label for="atE0">Initial energy (0–500)</label>
+          <input id="atE0" type="number" inputmode="numeric" min="0" max="500" placeholder="e.g., 110" />
+        </div>
+        <div>
+          <label for="atT0">Measured at</label>
+          <input id="atT0" type="datetime-local" />
+        </div>
+        <div>
+          <label for="atT">Target date & time</label>
+          <input id="atT" type="datetime-local" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" id="atCalc">Calculate</button>
+        <button class="btn" id="atReset">Reset</button>
+      </div>
+      <div class="result" id="atOut"></div>
+      <div class="note">If target time is before measured time, assumes no decay and shows current energy.</div>
+    </section>
+
+    <!-- Section 3: When will I reach target energy X? -->
+    <section class="card" id="sec-whenX">
+      <h2>When will I reach a target energy?</h2>
+      <div class="grid cols-2">
+        <div>
+          <label for="xE0">Initial energy (0–500)</label>
+          <input id="xE0" type="number" inputmode="numeric" min="0" max="500" placeholder="e.g., 110" />
+        </div>
+        <div>
+          <label for="xT0">Measured at</label>
+          <input id="xT0" type="datetime-local" />
+        </div>
+        <div>
+          <label for="xTarget">Target energy (0–500)</label>
+          <input id="xTarget" type="number" inputmode="numeric" min="0" max="500" placeholder="e.g., 400" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" id="xCalc">Calculate</button>
+        <button class="btn" id="xReset">Reset</button>
+      </div>
+      <div class="result" id="xOut"></div>
+      <div class="note">Target energy cannot exceed the cap (500).</div>
+    </section>
+
+    <!-- Section 4: Plan backwards to hit target energy by a set time -->
+    <section class="card" id="sec-back">
+      <h2>Plan Backwards (Save Planning)</h2>
+      <div class="grid cols-2">
+        <div>
+          <label for="bTargetE">Desired energy</label>
+          <input id="bTargetE" type="number" inputmode="numeric" min="0" max="500" value="500" />
+        </div>
+        <div>
+          <label for="bTTarget">Target date & time</label>
+          <input id="bTTarget" type="datetime-local" />
+        </div>
+        <div>
+          <label for="bStartE">Starting energy</label>
+          <input id="bStartE" type="number" inputmode="numeric" min="0" max="500" value="0" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" id="bCalc">Calculate</button>
+        <button class="btn" id="bReset">Reset</button>
+      </div>
+      <div class="result" id="bOut"></div>
+      <div class="note">Computes when to start saving to reach your target energy by the chosen time.</div>
+    </section>
+
+    <!-- Section 5: Spend Budget to Still Hit Cap by Target Time -->
+    <section class="card" id="sec-spend">
+      <h2>Spend Budget to Cap by Target Time</h2>
+      <div class="grid cols-2">
+        <div>
+          <label for="sE0">Current energy (0–500)</label>
+          <input id="sE0" type="number" inputmode="numeric" min="0" max="500" placeholder="e.g., 120" />
+        </div>
+        <div>
+          <label for="sT0">Current time (auto)</label>
+          <input id="sT0" type="datetime-local" />
+        </div>
+        <div>
+          <label for="sTcap">Target cap time (reach 500)</label>
+          <input id="sTcap" type="datetime-local" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" id="sCalc">Calculate</button>
+        <button class="btn" id="sReset">Reset</button>
+      </div>
+      <div class="result" id="sOut"></div>
+      <div class="note">Calculates the maximum total energy you can spend between now and the target time while still reaching 500 by that time.</div>
+    </section>
+
+    <div class="footer">Time zone: <span id="tzName" class="pill">—</span> <span id="tzOffset" class="pill">—</span></div>
+  </div>
+
+  <script>
+    // -------- Helpers --------
+    const RATE_MINUTES = 9; // +1 energy per 9 minutes
+    const CAP = 500;
+
+    function clampEnergy(e) {
+      e = Number.isFinite(e) ? Math.floor(e) : 0;
+      if (e < 0) return 0;
+      if (e > CAP) return CAP;
+      return e;
+    }
+
+    function toLocalInputValue(d) {
+      // Format Date to 'YYYY-MM-DDTHH:mm' for datetime-local
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function parseLocalDateTime(input) {
+      // input is like 'YYYY-MM-DDTHH:mm'
+      if (!input) return null;
+      // Construct as local time
+      const [datePart, timePart] = input.split('T');
+      if (!datePart || !timePart) return null;
+      const [y,m,day] = datePart.split('-').map(Number);
+      const [hh,mm] = timePart.split(':').map(Number);
+      const d = new Date();
+      d.setFullYear(y);
+      d.setMonth(m-1);
+      d.setDate(day);
+      d.setHours(hh);
+      d.setMinutes(mm);
+      d.setSeconds(0);
+      d.setMilliseconds(0);
+      return d;
+    }
+
+    function formatLocal(d) {
+      if (!(d instanceof Date) || isNaN(d)) return '—';
+      // Weekday + dd/mm/yyyy, HH:mm (24h)
+      const pad = (n) => String(n).padStart(2, '0');
+      const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const wk = weekdays[d.getDay()];
+      const dd = pad(d.getDate());
+      const mm = pad(d.getMonth()+1);
+      const yyyy = d.getFullYear();
+      const HH = pad(d.getHours());
+      const MM = pad(d.getMinutes());
+      return `${wk}, ${dd}/${mm}/${yyyy}, ${HH}:${MM}`;
+    }
+
+    function minutesBetween(a, b) {
+      // Returns floor minutes from a to b; a -> b
+      const ms = b.getTime() - a.getTime();
+      return Math.floor(ms / 60000);
+    }
+
+    function humanizeMinutes(mins) {
+      const sign = mins < 0 ? -1 : 1;
+      mins = Math.abs(mins);
+      const d = Math.floor(mins / (60*24));
+      const h = Math.floor((mins % (60*24)) / 60);
+      const m = Math.floor(mins % 60);
+      const parts = [];
+      if (d) parts.push(`${d}d`);
+      if (h) parts.push(`${h}h`);
+      if (m || parts.length === 0) parts.push(`${m}m`);
+      const joined = parts.join(' ');
+      return sign < 0 ? `-${joined}` : joined;
+    }
+
+    function tzInfo() {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+      const offsetMinutes = new Date().getTimezoneOffset();
+      const hours = -offsetMinutes / 60;
+      const offset = `UTC${hours >= 0 ? '+' : ''}${hours}`;
+      return { tz, offset };
+    }
+
+    // -------- Calculations --------
+
+    // 1) Reach Max (500)
+    function calcCap(E0, T0) {
+      E0 = clampEnergy(E0);
+      if (!T0) return { error: 'Please provide the measured time.' };
+      if (E0 >= CAP) {
+        return {
+          needed: 0,
+          minutes: 0,
+          eta: T0,
+          info: 'Already at cap.'
+        };
+      }
+      const need = CAP - E0;
+      const mins = need * RATE_MINUTES;
+      const eta = new Date(T0.getTime() + mins * 60000);
+      return { needed: need, minutes: mins, eta };
+    }
+
+    // 2) Energy at Target Date/Time
+    function calcEnergyAt(E0, T0, T) {
+      E0 = clampEnergy(E0);
+      if (!T0 || !T) return { error: 'Please provide both measured time and target time.' };
+      let minsElapsed = minutesBetween(T0, T);
+      if (minsElapsed <= 0) {
+        // No decay; keep energy as E0
+        return { energy: E0, minutesElapsed: 0, gained: 0, note: 'Target is before or equal to measured time. Assuming no decay.' };
+      }
+      const gained = Math.floor(minsElapsed / RATE_MINUTES);
+      const energyAt = clampEnergy(E0 + gained);
+      // If energy reaches cap before T, compute cap time
+      let capTime = null;
+      if (E0 < CAP) {
+        const need = CAP - E0;
+        const minsToCap = need * RATE_MINUTES;
+        const tCap = new Date(T0.getTime() + minsToCap * 60000);
+        if (tCap.getTime() <= T.getTime()) capTime = tCap;
+      }
+      return { energy: energyAt, minutesElapsed: minsElapsed, gained, capTime };
+    }
+
+    // 3) When reach target energy X
+    function calcWhenX(E0, T0, X) {
+      E0 = clampEnergy(E0);
+      X = clampEnergy(X);
+      if (!T0) return { error: 'Please provide the measured time.' };
+      if (X <= E0) {
+        return { minutes: 0, eta: T0, info: 'Already at or above target energy.' };
+      }
+      const need = X - E0;
+      const mins = need * RATE_MINUTES;
+      const eta = new Date(T0.getTime() + mins * 60000);
+      return { minutes: mins, eta };
+    }
+
+    // 4) Plan backwards for target time
+    function calcBackwards(E_target, T_target, E_start) {
+      E_target = clampEnergy(E_target);
+      E_start = clampEnergy(E_start);
+      if (!T_target) return { error: 'Please provide the target time.' };
+      const need = Math.max(0, E_target - E_start);
+      const mins = need * RATE_MINUTES;
+      const T_start = new Date(T_target.getTime() - mins * 60000);
+      return { need, minutes: mins, startTime: T_start };
+    }
+
+    // 5) Spend budget to cap by target time
+    function calcSpendBudget(E0, T0, Tcap) {
+      E0 = clampEnergy(E0);
+      if (!T0 || !Tcap) return { error: 'Please provide current time and target cap time.' };
+      const minsUntil = minutesBetween(T0, Tcap);
+      const regen = minsUntil > 0 ? Math.floor(minsUntil / RATE_MINUTES) : 0;
+      const potential = E0 + regen; // energy available without any spend, before capping
+      const spendMax = Math.max(0, potential - CAP); // total you can spend and still end at 500
+      let deficit = 0;
+      let earliestCapTime = null;
+      if (potential < CAP) {
+        deficit = CAP - potential;
+        const need = Math.max(0, CAP - E0);
+        const minsToCap = need * RATE_MINUTES;
+        earliestCapTime = new Date(T0.getTime() + minsToCap * 60000);
+      } else {
+        // You already have enough regen to cap by or before Tcap
+        const need = Math.max(0, CAP - E0);
+        const minsToCap = need * RATE_MINUTES;
+        earliestCapTime = new Date(T0.getTime() + minsToCap * 60000);
+      }
+      return { minsUntil, regen, spendMax, deficit, earliestCapTime };
+    }
+
+    // -------- UI wiring --------
+    function setDefaultsNow() {
+      const now = new Date();
+      const val = toLocalInputValue(now);
+      ['capT0','atT0','xT0','sT0'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = val;
+      });
+    }
+
+    function showTZ() {
+      const { tz, offset } = tzInfo();
+      document.getElementById('tzInfo').textContent = `Local time: ${formatLocal(new Date())}`;
+      document.getElementById('tzName').textContent = tz;
+      document.getElementById('tzOffset').textContent = offset;
+    }
+
+    function readNumber(id) {
+      const v = parseFloat(document.getElementById(id).value);
+      return Number.isFinite(v) ? v : NaN;
+    }
+    function readDate(id) {
+      const v = document.getElementById(id).value;
+      return parseLocalDateTime(v);
+    }
+
+    // Section 1 events
+    document.getElementById('capCalc').addEventListener('click', () => {
+      const E0 = readNumber('capE0');
+      const T0 = readDate('capT0');
+      const out = document.getElementById('capOut');
+      if (!Number.isFinite(E0)) { out.textContent = 'Enter a valid current energy (0–500).'; return; }
+      const res = calcCap(E0, T0);
+      if (res.error) { out.textContent = res.error; return; }
+      const lines = [];
+      if (res.info) lines.push(res.info);
+      lines.push(`Needed: ${res.needed} energy`);
+      lines.push(`Time to cap: ${humanizeMinutes(res.minutes)} (${res.minutes} min)`);
+      lines.push(`ETA: ${formatLocal(res.eta)}`);
+      out.textContent = lines.join('\n');
+    });
+    document.getElementById('capReset').addEventListener('click', () => {
+      document.getElementById('capE0').value = '';
+      document.getElementById('capT0').value = toLocalInputValue(new Date());
+      document.getElementById('capOut').textContent = '';
+    });
+
+    // Section 2 events
+    document.getElementById('atCalc').addEventListener('click', () => {
+      const E0 = readNumber('atE0');
+      const T0 = readDate('atT0');
+      const T = readDate('atT');
+      const out = document.getElementById('atOut');
+      if (!Number.isFinite(E0)) { out.textContent = 'Enter a valid initial energy (0–500).'; return; }
+      const res = calcEnergyAt(E0, T0, T);
+      if (res.error) { out.textContent = res.error; return; }
+      const lines = [];
+      if (res.note) lines.push(res.note);
+      lines.push(`Elapsed: ${humanizeMinutes(res.minutesElapsed)} (${res.minutesElapsed} min)`);
+      lines.push(`Gained: ${res.gained} energy`);
+      lines.push(`Energy at target: ${res.energy}`);
+      if (res.capTime) lines.push(`Cap reached at: ${formatLocal(res.capTime)}`);
+      out.textContent = lines.join('\n');
+    });
+    document.getElementById('atReset').addEventListener('click', () => {
+      document.getElementById('atE0').value = '';
+      document.getElementById('atT0').value = toLocalInputValue(new Date());
+      document.getElementById('atT').value = '';
+      document.getElementById('atOut').textContent = '';
+    });
+
+    // Section 3 events
+    document.getElementById('xCalc').addEventListener('click', () => {
+      const E0 = readNumber('xE0');
+      const T0 = readDate('xT0');
+      const X = readNumber('xTarget');
+      const out = document.getElementById('xOut');
+      if (!Number.isFinite(E0)) { out.textContent = 'Enter a valid initial energy (0–500).'; return; }
+      if (!Number.isFinite(X)) { out.textContent = 'Enter a valid target energy (0–500).'; return; }
+      const res = calcWhenX(E0, T0, X);
+      if (res.error) { out.textContent = res.error; return; }
+      const lines = [];
+      if (res.info) lines.push(res.info);
+      lines.push(`Time to target: ${humanizeMinutes(res.minutes)} (${res.minutes} min)`);
+      lines.push(`ETA: ${formatLocal(res.eta)}`);
+      out.textContent = lines.join('\n');
+    });
+    document.getElementById('xReset').addEventListener('click', () => {
+      document.getElementById('xE0').value = '';
+      document.getElementById('xT0').value = toLocalInputValue(new Date());
+      document.getElementById('xTarget').value = '';
+      document.getElementById('xOut').textContent = '';
+    });
+
+    // Section 4 events
+    document.getElementById('bCalc').addEventListener('click', () => {
+      const E_target = readNumber('bTargetE');
+      const T_target = readDate('bTTarget');
+      const E_start = readNumber('bStartE');
+      const out = document.getElementById('bOut');
+      if (!Number.isFinite(E_target)) { out.textContent = 'Enter a valid desired energy (0–500).'; return; }
+      if (!Number.isFinite(E_start)) { out.textContent = 'Enter a valid starting energy (0–500).'; return; }
+      const res = calcBackwards(E_target, T_target, E_start);
+      if (res.error) { out.textContent = res.error; return; }
+      const lines = [];
+      lines.push(`Needed: ${res.need} energy`);
+      lines.push(`Lead time: ${humanizeMinutes(res.minutes)} (${res.minutes} min)`);
+      lines.push(`Start saving at: ${formatLocal(res.startTime)}`);
+      out.textContent = lines.join('\n');
+    });
+    document.getElementById('bReset').addEventListener('click', () => {
+      document.getElementById('bTargetE').value = 500;
+      document.getElementById('bTTarget').value = '';
+      document.getElementById('bStartE').value = 0;
+      document.getElementById('bOut').textContent = '';
+    });
+
+    // Section 5 events
+    document.getElementById('sCalc').addEventListener('click', () => {
+      const E0 = readNumber('sE0');
+      const T0 = readDate('sT0');
+      const Tcap = readDate('sTcap');
+      const out = document.getElementById('sOut');
+      if (!Number.isFinite(E0)) { out.textContent = 'Enter a valid current energy (0–500).'; return; }
+      const res = calcSpendBudget(E0, T0, Tcap);
+      if (res.error) { out.textContent = res.error; return; }
+      const lines = [];
+      lines.push(`Target cap time: ${formatLocal(Tcap)}`);
+      lines.push(`Time until target: ${humanizeMinutes(res.minsUntil)} (${res.minsUntil} min)`);
+      lines.push(`Regen available: ${res.regen} energy`);
+      if (res.deficit > 0) {
+        lines.push(`\nYou cannot reach cap by the target time. Deficit: ${res.deficit} energy.`);
+        lines.push(`Earliest cap (no spending): ${formatLocal(res.earliestCapTime)}`);
+      } else {
+        lines.push(`\nMaximum spend budget until target: ${res.spendMax} energy`);
+        lines.push(`Earliest cap (if you do not spend): ${formatLocal(res.earliestCapTime)}`);
+      }
+      out.textContent = lines.join('\n');
+    });
+    document.getElementById('sReset').addEventListener('click', () => {
+      document.getElementById('sE0').value = '';
+      document.getElementById('sT0').value = toLocalInputValue(new Date());
+      document.getElementById('sTcap').value = '';
+      document.getElementById('sOut').textContent = '';
+    });
+
+    // Init
+    setDefaultsNow();
+    showTZ();
+  </script>
+</body>
+</html>
